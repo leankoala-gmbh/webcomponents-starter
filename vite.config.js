@@ -1,5 +1,7 @@
 import * as path from 'path'
 import { defineConfig } from 'vite'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
 import vue from '@vitejs/plugin-vue'
 import pkg from './package.json'
 
@@ -11,10 +13,36 @@ if (process.env.NODE_ENV === 'production') {
 export default defineConfig({
   plugins: [
     vue({
-      script: {
-        refSugar: true,
-      },
+      script: {}
     }),
+    Components({
+      dirs: ['./src/components'],
+      dts: true
+    }),
+    AutoImport({
+      dts: './auto-imports.d.ts',
+      defaultExportByFilename: false,
+      vueTemplate: true,
+      include: [
+        /\.[tj]s?$/,
+        /\.vue\??/,
+        /\.mdx?$/
+      ],
+      dirs: [
+        './src/composables/**',
+        './src/composables',
+        './src/utils/**',
+        './src/utils'
+      ],
+      imports: [
+        'vue'
+      ],
+      eslintrc: {
+        enabled: true,
+        filepath: './.eslintrc-auto-import.json',
+        globalsPropValue: true
+      }
+    })
   ],
   resolve: {
     alias: {
@@ -24,8 +52,9 @@ export default defineConfig({
   },
   build: {
     cssCodeSplit: false,
+    target: 'es2018',
+    format: 'cjs',
     rollupOptions: {
-      format: 'cjs',
       output: {
         entryFileNames: '[name].js',
         chunkFileNames: '[name].js',
@@ -35,6 +64,13 @@ export default defineConfig({
           return assetInfo.name
         }
       }
+    }
+  },
+  test: {
+    include: ['tests/**/*.test.ts', 'src/components/**/*.test.ts', 'src/composables/**/*.test.ts'],
+    environment: 'jsdom',
+    deps: {
+      inline: ['@vue']
     }
   }
 })
